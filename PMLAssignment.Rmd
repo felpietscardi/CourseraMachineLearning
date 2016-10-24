@@ -1,0 +1,111 @@
+---
+title: "Practical Machine Learning Assignment"
+author: "Chun-Fu Wang"
+output: html_document
+---
+
+# Loading the Data
+```{r}
+library(dplyr)
+library(caret)
+
+trainData <- read.csv("pml-training.csv")
+testData <- read.csv("pml-testing.csv")
+
+trainData <- trainData[2:length(trainData)]
+testData <- testData[2:length(testData)]
+
+dim(trainData)
+dim(testData)
+
+```
+There are `{r} I(length(trainData))` observations in the training data set and `{r} I(length(testData))` observations in the test data set that we are going to predict.
+
+
+# Exploratory Data Analysis
+Removing the near zero variance features as well as the statistically insignificant features.
+
+```{r}
+# cleaning up data
+dim(trainData)
+nzv <- nearZeroVar(trainData)
+filteredTrainData <- trainData[, -nzv]
+filteredTestData <- testData[, -nzv]
+
+# removed statistically insignificant variables
+filteredTrainData <- 
+    filteredTrainData %>% 
+    select(-c(user_name, 
+              raw_timestamp_part_1, 
+              raw_timestamp_part_2, 
+              cvtd_timestamp,
+              max_roll_belt:var_yaw_belt,
+              var_accel_arm,
+              max_picth_arm:amplitude_yaw_arm,
+              max_roll_dumbbell:amplitude_pitch_dumbbell,
+              var_accel_dumbbell:var_yaw_dumbbell,
+              max_picth_forearm:amplitude_pitch_forearm,
+              var_accel_forearm))
+
+# remove from test set as well
+filteredTestData <- 
+    filteredTestData %>% 
+    select(-c(user_name, 
+              raw_timestamp_part_1, 
+              raw_timestamp_part_2, 
+              cvtd_timestamp,
+              max_roll_belt:var_yaw_belt,
+              var_accel_arm,
+              max_picth_arm:amplitude_yaw_arm,
+              max_roll_dumbbell:amplitude_pitch_dumbbell,
+              var_accel_dumbbell:var_yaw_dumbbell,
+              max_picth_forearm:amplitude_pitch_forearm,
+              var_accel_forearm))
+
+dim(filteredTrainData)
+dim(filteredTestData)
+
+```
+
+# Preprocess
+Split the training data into two set of 80% and 20%.
+```{r}
+set.seed(142678)
+
+dataIndex <- createDataPartition(filteredTrainData$classe, p = 0.8, list = FALSE)
+trainSet <- filteredTrainData[dataIndex, ]
+testSet <- filteredTrainData[-dataIndex, ]
+
+```
+
+# Machine Learning
+Using Random Forest and Rpart to train the model.
+```{r}
+library(doParallel)
+registerDoParallel()
+
+modelRf <- train(classe ~ ., data = trainSet, model = "rf")
+modelRpart <- train(classe ~ ., data = trainSet, model = "rpart")
+
+predRf <- predict(modelRf, newdata = testSet)
+predRpart <- predict(modelRpart, newdata = testSet)
+
+C1 <- confusionMatrix(predRf, testSet$classe)
+print(C1)
+
+C2 <- confusionMatrix(predRpart, testSet$classe)
+print(C2)
+
+```
+
+# Out of Sample Error
+Out of sample error for Random Forest is: `{r} I((1 - C1$overall[1]) * 100)`.
+Out of sample error for Decision Tree is: `{r} I((1 - C2$overall[1]) * 100)`.
+
+# Predictin Result
+Predicting the result using Random Forest models because of the lower out of sample error.
+```{r}
+predResult <- predict(modelRf, newdata = filteredTestData)
+print(predResult)
+
+```
