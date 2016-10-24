@@ -19,7 +19,7 @@ dim(trainData)
 dim(testData)
 
 ```
-There are `{r} I(length(trainData))` observations in the training data set and `{r} I(length(testData))` observations in the test data set that we are going to predict.
+There are 19622 observations in the training data set and 20 observations in the test data set that we are going to predict.
 
 
 # Exploratory Data Analysis
@@ -80,9 +80,9 @@ testSet <- filteredTrainData[-dataIndex, ]
 
 # Machine Learning
 Using Random Forest and Rpart to train the model.
-```{r}
-library(doParallel)
-registerDoParallel()
+```{r cache=TRUE}
+library(doMC)
+registerDoMC(cores = 4)
 
 modelRf <- train(classe ~ ., data = trainSet, model = "rf")
 modelRpart <- train(classe ~ ., data = trainSet, model = "rpart")
@@ -99,8 +99,14 @@ print(C2)
 ```
 
 # Out of Sample Error
-Out of sample error for Random Forest is: `{r} I((1 - C1$overall[1]) * 100)`.
-Out of sample error for Decision Tree is: `{r} I((1 - C2$overall[1]) * 100)`.
+Out of sample error for Random Forest is: 
+```{r} 
+print((1 - C1$overall[1]) * 100)
+```
+Out of sample error for Decision Tree is: 
+```{r} 
+print((1 - C2$overall[1]) * 100)
+```
 
 # Predictin Result
 Predicting the result using Random Forest models because of the lower out of sample error.
